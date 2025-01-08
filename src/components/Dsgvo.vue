@@ -45,7 +45,7 @@
       </ul>
       <p>
         Wenn du Fragen hast oder von diesen Rechten Gebrauch machen möchtest, schreibe mir eine E-Mail
-        an <a href="mailto:info@kilianhae.de">info@kilianhae.de</a>.
+        an <a href="mailto:jo.haerterich@gmx.de">jo.haerterich@gmx.de</a>.
       </p>
   
       <h2>5. Änderungen dieser Datenschutzerklärung</h2>

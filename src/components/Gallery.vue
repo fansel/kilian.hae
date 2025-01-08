@@ -172,7 +172,7 @@ export default defineComponent({
         `Link: ${shareUrl}\n\n` +
         'Viele Grüße!';
 
-      return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      return `mailto:jo.haerterich@gmx.de?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     },
   },
   async created() {
