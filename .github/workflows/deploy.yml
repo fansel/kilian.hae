@@ -35,7 +35,7 @@ jobs:
           server: ${{ secrets.FTP_SERVER }} # Ersetze mit deinem FTP-Server
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./build/dist/
+          local-dir: ./dist/
           server-dir: /www/  
           exclude: |
             /node_modules/*
