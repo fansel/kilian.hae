@@ -2,13 +2,65 @@
 body {
   margin: 0;
   padding: 0;
-  font-family:  Arial, Helvetica, sans-serif, monospace;
+  font-family: Arial, Helvetica, sans-serif, monospace;
   color: black;
   background-color: white;
   line-height: 1.6;
-  font-weight: bold; /* Dünne Schrift für minimalistischen Look */
+  font-weight: bold; /* Fettschrift für minimalistischen Look */
+  overflow-x: hidden; /* Verhindert horizontales Scrollen */
 }
 
+html {
+  overflow-x: hidden; /* Verhindert horizontales Scrollen im Root-Element */
+}
 
+/* Hauptinhalt: Bild in angemessener Größe */
+main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+  padding: 20px;
+  box-sizing: border-box;
+}
 
+.image-container img {
+  max-width: 60%; /* Angemessene Größe für das Bild */
+  height: auto;
+  border: none; /* Keine Ränder */
+}
 
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 10px 0;
+  font-size: 1rem;
+  font-family: Arial, Helvetica, sans-serif, monospace;
+  border-top: 1px solid #ddd;
+  background: #f9f9f9;
+  width: 100%;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+
+/* Für Mobilgeräte (maximale Breite 768px) */
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden; /* Sicherstellen, dass auch auf Mobilgeräten kein horizontales Scrollen möglich ist */
+  }
+
+  main {
+    flex-direction: column; /* Inhalte vertikal anordnen, falls notwendig */
+    padding: 10px; /* Weniger Padding für kleinere Bildschirme */
+  }
+
+  .image-container img {
+    max-width: 100%; /* Bild passt in den mobilen Bildschirm */
+    margin: 0 auto; /* Zentriere das Bild */
+  }
+
+  .footer {
+    font-size: 0.9rem; /* Kleinere Schrift für mobile Geräte */
+  }
+}
