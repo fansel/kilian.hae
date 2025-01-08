@@ -35,10 +35,12 @@ jobs:
           server: ${{ secrets.FTP_SERVER }} # Ersetze mit deinem FTP-Server
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./build/dist/index.html  # Pfad zu deiner build/index.html
+          local-dir: ./build/dist/  # Pfad zu deiner build/index.html
           server-dir: /www/  
           exclude: |
             **/*  
+          include: |
+            index.html
 
       # Schritt 6: assets Ordner hochladen
       - name: Deploy Assets
@@ -59,7 +61,7 @@ jobs:
           server:  ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./build/dist/gallery.php 
+          local-dir: ./build/dist/
           server-dir: /www/public/ 
           exclude: |
             **/* 
