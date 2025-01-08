@@ -29,41 +29,16 @@ jobs:
         run: npm run build
 
       # Schritt 5: index.html hochladen
-      - name: Deploy index.html
+      - name: Deploy all Files
         uses: SamKirkland/FTP-Deploy-Action@4.2.0
         with:
           server: ${{ secrets.FTP_SERVER }} # Ersetze mit deinem FTP-Server
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./build/dist/  # Pfad zu deiner build/index.html
+          local-dir: ./build/dist/
           server-dir: /www/  
           exclude: |
-            **/*  
-          include: |
-            index.html
+            /node_modules/*
+            /gallery/*
 
-      # Schritt 6: assets Ordner hochladen
-      - name: Deploy Assets
-        uses: SamKirkland/FTP-Deploy-Action@4.2.0
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./build/dist/assets  # Pfad zu deinen build/dist/assets
-          server-dir: /www/assets  # Zielverzeichnis auf dem Server
-          exclude: |
-            **/* 
 
-      # Schritt 7: public/gallery.php hochladen
-      - name: Deploy gallery.php
-        uses: SamKirkland/FTP-Deploy-Action@4.2.0
-        with:
-          server:  ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./build/dist/
-          server-dir: /www/public/ 
-          exclude: |
-            **/* 
-          include: |
-            gallery.php 
