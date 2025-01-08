@@ -1,0 +1,67 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main  # Ändere dies auf den Branch, den du überwachen möchtest
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Schritt 1: Repository auschecken
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Schritt 2: Node.js einrichten
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'  
+
+      # Schritt 3: Abhängigkeiten installieren
+      - name: Install Dependencies
+        run: npm install
+
+      # Schritt 4: Build ausführen
+      - name: Run Build
+        run: npm run build
+
+      # Schritt 5: index.html hochladen
+      - name: Deploy index.html
+        uses: SamKirkland/FTP-Deploy-Action@4.2.0
+        with:
+          server: ${{ secrets.FTP_SERVER }} # Ersetze mit deinem FTP-Server
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./build/dist/index.html  # Pfad zu deiner build/index.html
+          server-dir: /www/  
+          exclude: |
+            **/*  
+
+      # Schritt 6: assets Ordner hochladen
+      - name: Deploy Assets
+        uses: SamKirkland/FTP-Deploy-Action@4.2.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./build/dist/assets  # Pfad zu deinen build/dist/assets
+          server-dir: /www/assets  # Zielverzeichnis auf dem Server
+          exclude: |
+            **/* 
+
+      # Schritt 7: public/gallery.php hochladen
+      - name: Deploy gallery.php
+        uses: SamKirkland/FTP-Deploy-Action@4.2.0
+        with:
+          server:  ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./build/dist/gallery.php 
+          server-dir: /www/public/ 
+          exclude: |
+            **/* 
+          include: |
+            gallery.php 
