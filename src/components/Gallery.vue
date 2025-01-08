@@ -40,7 +40,6 @@
         <img
           :src="item.src"
           :alt="item.title"
-          loading="lazy"
         />
         <div class="hover-info">
           <p class="title">{{ item.title }}</p>
