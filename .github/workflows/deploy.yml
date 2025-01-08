@@ -3,7 +3,7 @@ name: Build and Deploy
 on:
   push:
     branches:
-      - main  # Ändere dies auf den Branch, den du überwachen möchtest
+      - main  
 
 jobs:
   build-and-deploy:
