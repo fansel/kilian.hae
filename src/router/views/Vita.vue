@@ -15,7 +15,7 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 .vita-container {
   max-width: 800px;
   margin: 0 auto;

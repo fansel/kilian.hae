@@ -28,7 +28,7 @@
   };
   </script>
   
-  <style scoped>
+  <style>
   .impressum {
     padding: 20px;
     line-height: 1.6;

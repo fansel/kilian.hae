@@ -62,7 +62,7 @@
   };
   </script>
   
-  <style scoped>
+  <style>
   .dsgvo {
     font-family: Arial, sans-serif;
     line-height: 1.6;

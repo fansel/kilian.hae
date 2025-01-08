@@ -9,7 +9,7 @@
     </footer>
   </template>
   
-  <style scoped>
+  <style>
 
 
 html, body {

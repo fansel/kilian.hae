@@ -17,7 +17,7 @@ export default defineComponent({
 });
 </script>
 
-<style scoped>
+<style >
 .title {
   text-align: center;
   font-size: 2rem;

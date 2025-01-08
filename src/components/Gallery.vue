@@ -5,12 +5,16 @@
       <!-- Dropdown for Mobile -->
       <select class="category-dropdown" @change="handleDropdownChange" v-if="isMobile">
         <option value="">ALLE</option>
-        <option v-for="(material, index) in uniqueMaterials" :key="index" :value="material">
+        <option
+          v-for="(material, index) in uniqueMaterials"
+          :key="index"
+          :value="material"
+        >
           {{ material }}
         </option>
       </select>
 
-      <!-- Buttons for Desktop -->
+      <!-- Buttons für Desktop -->
       <div class="category-buttons" v-if="!isMobile">
         <button class="category-button" @click="resetFilter">ALLE</button>
         <button
@@ -32,10 +36,17 @@
         class="gallery-item"
         @click="openPopup(index)"
       >
-        <img :src="item.src" :alt="item.title" />
+        <!-- Lazy Loading -->
+        <img
+          :src="item.src"
+          :alt="item.title"
+          loading="lazy"
+        />
         <div class="hover-info">
           <p class="title">{{ item.title }}</p>
-          <p class="details">{{ item.month ? item.month + ' ' : '' }}{{ item.year }}</p>
+          <p class="details">
+            {{ item.month ? item.month + ' ' : '' }}{{ item.year }}
+          </p>
           <p class="details">{{ item.dimensions }}</p>
         </div>
       </div>
@@ -44,7 +55,10 @@
     <!-- Popup -->
     <div v-if="selectedIndex !== null" class="popup">
       <div class="popup-content">
+        <!-- Schließen -->
         <button class="close-button" @click="closePopup">X</button>
+
+        <!-- Navigation -->
         <button class="prev-button" @click="prevImage">&lt;</button>
         <img
           :src="filteredItems[selectedIndex].src"
@@ -52,22 +66,45 @@
           class="popup-image"
         />
         <button class="next-button" @click="nextImage">&gt;</button>
+
+        <!-- Popup-Details -->
         <div class="popup-details">
           <h2>{{ filteredItems[selectedIndex].title }}</h2>
-          <p><strong>Material:</strong> {{ filteredItems[selectedIndex].material }}</p>
           <p>
-            <strong>Monat & Jahr:</strong>
-            {{ filteredItems[selectedIndex].month ? filteredItems[selectedIndex].month + ' ' : '' }}{{ filteredItems[selectedIndex].year }}
+            <strong>Material:</strong>
+            {{ filteredItems[selectedIndex].material }}
           </p>
-          <p><strong>Maße:</strong> {{ filteredItems[selectedIndex].dimensions }}</p>
-          <p><strong>Verfügbarkeit:</strong> {{ currentAvailability }}</p>
+          <p>
+            <strong>Monat &amp; Jahr:</strong>
+            {{ filteredItems[selectedIndex].month
+              ? filteredItems[selectedIndex].month + ' '
+              : '' }}{{ filteredItems[selectedIndex].year }}
+          </p>
+          <p>
+            <strong>Maße:</strong>
+            {{ filteredItems[selectedIndex].dimensions }}
+          </p>
+          <p>
+            <strong>Verfügbarkeit:</strong>
+            {{ currentAvailability }}
+          </p>
+
+          <!-- Teilen / Interesse -->
+          <div class="share-container">
+            <a
+              :href="mailtoLink"
+              class="share-link"
+              title="Teilen / Interesse bekunden"
+            >
+              📧 Ich bin interessiert
+            </a>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </template>
 
-  
 <script lang="ts">
 import { defineComponent } from 'vue';
 
@@ -84,64 +121,123 @@ export default defineComponent({
         dimensions: string;
         availability: string;
       }[],
-      filteredMaterial: '', // Currently filtered category
-      selectedIndex: null as number | null, // Index of the current image
-      isMobile: window.innerWidth <= 768, // Determine if the device is mobile
+      filteredMaterial: '',         // Kategorie-Filter
+      selectedIndex: null as number | null,
+      isMobile: window.innerWidth <= 768,
     };
   },
   computed: {
+    /* Filtered Items nach Material */
     filteredItems() {
-      return this.filteredMaterial
-        ? this.galleryItems.filter((item) => item.material === this.filteredMaterial)
-        : this.galleryItems;
+      if (this.filteredMaterial) {
+        return this.galleryItems.filter((item) => item.material === this.filteredMaterial);
+      }
+      return this.galleryItems;
     },
+    /* "verfügbar" / "nicht verfügbar" */
     currentAvailability(): string | null {
       if (this.selectedIndex === null) {
-        console.error('No selected index (selectedIndex is null)');
         return null;
       }
-
       const currentItem = this.filteredItems[this.selectedIndex];
       if (!currentItem) {
-        console.error('No element in filteredItems for selectedIndex:', this.selectedIndex);
         return null;
       }
-
-      // Check availability based on the filename
-      return currentItem.src.endsWith('_x.jpg') || currentItem.src.endsWith('_x_S.jpg') 
-  ? 'not available' 
-  : 'available';
-
+      // Wir schauen nur, ob "_x" oder "_x_S" im Dateinamen ist:
+      if (currentItem.src.includes('_x') || currentItem.src.includes('_x_S')) {
+        return 'nicht verfügbar';
+      }
+      return 'verfügbar';
     },
+    /* Eindeutige Materialien -> Buttons / Dropdown */
     uniqueMaterials() {
-      return [...new Set(this.galleryItems.map((item) => item.material))];
+      const allMats = this.galleryItems.map((item) => item.material);
+      return [...new Set(allMats)];
+    },
+    /* Erzeugt Mailto-Link mit /work?work=... */
+    mailtoLink(): string {
+      if (this.selectedIndex === null) {
+        return '#';
+      }
+      const currentItem = this.filteredItems[this.selectedIndex];
+      if (!currentItem) {
+        return '#';
+      }
+      // Du kannst die Domain anpassen:
+      const shareUrl = window.location.origin + `/work?work=${encodeURIComponent(currentItem.title)}`;
+      const subject = `Interesse an: ${currentItem.title}`;
+      const body =
+        'Hallo,\n\n' +
+        `ich interessiere mich für "${currentItem.title}".\n` +
+        `Link: ${shareUrl}\n\n` +
+        'Viele Grüße!';
+
+      return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     },
   },
-  created() {
-    this.loadGallery();
+  async created() {
+    // Galerie laden
+    await this.loadGallery();
+
+    // Prüfe direkt, ob URL ein ?work=... hat -> popup öffnen
+    const params = new URLSearchParams(window.location.search);
+    const requestedWork = params.get('work');
+    if (requestedWork) {
+      // Warte etwas, bis galleryItems gefüllt sind
+      // (hier als einfache Lösung. Alternativ nach loadGallery() an passender Stelle)
+      setTimeout(() => {
+        this.openPopupByTitle(requestedWork as string);
+      }, 300);
+    }
+
+    // Resize-Listener
     window.addEventListener('resize', this.checkIfMobile);
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.checkIfMobile);
   },
   methods: {
+    /* Galerie-Dateien per AJAX abholen */
     async loadGallery() {
       try {
-        const response = await fetch('/gallery.php'); // Your PHP endpoint
+        const response = await fetch('/gallery.php', {
+          cache: 'force-cache',
+        });
         if (!response.ok) {
-          throw new Error(`HTTP error: ${response.status}`);
+          throw new Error(`HTTP-Fehler: ${response.status}`);
         }
 
+        // Serverseitig gefilterte Liste korrekter Dateinamen
         const files: string[] = await response.json();
-        console.log('API Response:', files);
+        console.log('API-Antwort:', files);
 
+        // Wir setzen das Array
         this.galleryItems = files.map((filename) => {
-          const src = `/gallery/${filename}`;
-          const [titlePart, material, datePart, dimensionsPart] = filename.split('_');
-          const [month, year] = datePart.includes('-')
-            ? datePart.split('-')
-            : [null, datePart.replace(/\.\w+$/, '')]; // Remove file extension
-          const dimensions = dimensionsPart.replace(/\.\w+$/, '').replace('-', 'x');
+          // Pfad zum Bild
+          const src = `/gallery/${encodeURIComponent(filename)}`;
+          const decodedFilename = decodeURIComponent(filename);
+
+          // Auseinandernehmen in 4 Teile: title, material, datePart, dimensionsPart
+          // => Server garantiert: min. 4 Teile und plausibles Jahr
+          const parts = decodedFilename.split('_');
+          const [titlePart, material, datePart, dimensionsPart] = parts;
+
+          // Datum
+          let month: string | null = null;
+          let yearStr: string;
+          if (datePart.includes('-')) {
+            const splitted = datePart.split('-');
+            month = splitted[0];
+            yearStr = splitted[1];
+          } else {
+            // nur Jahr
+            // -> Dateiendung weg
+            yearStr = datePart.replace(/\.\w+$/, '');
+          }
+          // Maße z.B. "30-40.png" -> "30-40" -> "30x40"
+          const dimensionClean = dimensionsPart.replace(/\.\w+$/, '').replace('-', 'x');
+
+          // Optional: availability
           const availability = filename.includes('_x.') ? 'Sold' : 'Available';
 
           return {
@@ -149,17 +245,17 @@ export default defineComponent({
             title: titlePart.replace(/-/g, ' '),
             material,
             month: month ? this.translateMonth(month) : null,
-            year: parseInt(year, 10),
-            dimensions,
+            year: parseInt(yearStr, 10),
+            dimensions: dimensionClean,
             availability,
           };
         });
-
-        console.log('Gallery Items:', this.galleryItems);
       } catch (error) {
-        console.error('Error loading the gallery:', error);
+        console.error('Fehler beim Laden der Galerie:', error);
       }
     },
+
+    /* Hilfsfunktion: Deutsche Monatsnamen */
     translateMonth(month: string): string {
       const months: Record<string, string> = {
         Januar: 'Januar',
@@ -177,33 +273,68 @@ export default defineComponent({
       };
       return months[month] || month;
     },
+
+    /* Filter zurücksetzen */
     resetFilter() {
       this.filteredMaterial = '';
     },
+    /* Beim Klick auf Material-Button */
     handleCategoryClick(material: string) {
       this.filteredMaterial = material;
     },
+    /* Dropdown in Mobile */
     handleDropdownChange(event: Event) {
       const target = event.target as HTMLSelectElement;
       this.filteredMaterial = target.value;
     },
+
+    /* Popup öffnen + URL /work?work=... setzen */
     openPopup(index: number) {
       this.selectedIndex = index;
+      const item = this.filteredItems[index];
+      if (item) {
+        const encodedTitle = encodeURIComponent(item.title);
+        window.history.pushState({}, '', `/work?work=${encodedTitle}`);
+      }
     },
+    /* Popup per Title öffnen (z.B. beim Seitenaufruf mit ?work=...) */
+    openPopupByTitle(workTitle: string) {
+      const decoded = decodeURIComponent(workTitle);
+      const foundIndex = this.filteredItems.findIndex((item) => item.title === decoded);
+      if (foundIndex >= 0) {
+        this.openPopup(foundIndex);
+      }
+    },
+
     closePopup() {
       this.selectedIndex = null;
+      window.history.pushState({}, '', '/work'); // Zurück zu /work ohne ?-Parameter
     },
+
     prevImage() {
       if (this.selectedIndex !== null) {
         this.selectedIndex =
-          (this.selectedIndex - 1 + this.filteredItems.length) % this.filteredItems.length;
+          (this.selectedIndex - 1 + this.filteredItems.length) %
+          this.filteredItems.length;
+        this.syncUrlWithCurrentIndex();
       }
     },
     nextImage() {
       if (this.selectedIndex !== null) {
-        this.selectedIndex = (this.selectedIndex + 1) % this.filteredItems.length;
+        this.selectedIndex =
+          (this.selectedIndex + 1) % this.filteredItems.length;
+        this.syncUrlWithCurrentIndex();
       }
     },
+    /* Aktualisiert die URL beim Vor/Zurückblättern */
+    syncUrlWithCurrentIndex() {
+      if (this.selectedIndex === null) return;
+      const item = this.filteredItems[this.selectedIndex];
+      if (!item) return;
+      const encodedTitle = encodeURIComponent(item.title);
+      window.history.pushState({}, '', `/work?work=${encodedTitle}`);
+    },
+
     checkIfMobile() {
       this.isMobile = window.innerWidth <= 768;
     },
@@ -211,43 +342,39 @@ export default defineComponent({
 });
 </script>
 
-  
-  
-
-
-
-
-
 <style scoped>
-/* Popup Navigation Buttons */
+/* ----------------------------------
+   Popup-Navigation (Vor/Zurück)
+---------------------------------- */
 .prev-button,
 .next-button {
   background: none;
   border: none;
   font-size: 2rem;
-  color: black; /* Buttons sind jetzt schwarz */
+  color: black;
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   cursor: pointer;
-  padding: 0 20px; /* Abstand vom Bildrand */
+  padding: 0 20px;
   z-index: 10;
 }
 
 .prev-button {
-  left: -40px; /* Links vom Bild positionieren */
+  left: -40px;
 }
 
 .next-button {
-  right: -40px; /* Rechts vom Bild positionieren */
+  right: -40px;
 }
 
 .prev-button:hover,
 .next-button:hover {
-  color: red; /* Hover-Effekt für bessere Sichtbarkeit */
+  color: red;
 }
 
-/* Zusätzlicher Schutz, falls das Bild kleiner als erwartet ist */
+/* Damit Bild und Buttons sich nicht überlappen, 
+   haben wir .popup-image unten max-width/height */
 .popup-content {
   position: relative;
   padding: 20px;
@@ -255,84 +382,85 @@ export default defineComponent({
   align-items: center;
 }
 
-
-/* Hauptlayout */
+/* ----------------------------------
+   Hauptlayout
+---------------------------------- */
 html, body {
   margin: 0;
   padding: 0;
   font-family: Arial, sans-serif;
   height: 100%;
-  overflow-y: auto; /* Scrollen auf der gesamten Website */
+  overflow-y: auto;
 }
 
-/* Main Container */
 .main-container {
-  display: flex; /* Flexbox-Layout für nebeneinanderstehende Elemente */
-  align-items: flex-start; /* Elemente oben ausrichten */
+  display: flex;
+  align-items: flex-start;
   margin: 0;
-  height: auto; /* Scrollhöhe dynamisch */
+  height: auto;
 }
 
-/* Kategorienleiste */
+/* ----------------------------------
+   Kategorien
+---------------------------------- */
 .categories {
-  position: sticky; /* Fixiert beim Scrollen */
-  top: 0; /* Direkt am oberen Rand */
-  width: 200px; /* Feste Breite */
+  position: sticky;
+  top: 0;
+  width: 200px;
   background: white;
   z-index: 10;
   padding: 10px 20px;
   display: flex;
-  flex-direction: column; /* Buttons untereinander */
-  gap: 10px; /* Abstand zwischen Buttons */
+  flex-direction: column;
+  gap: 10px;
 }
 
-/* Buttons */
 .category-button {
-  all: unset; /* Entfernt alle globalen Button-Stile */
+  all: unset;
   background: none;
   padding: 10px;
   text-align: center;
   cursor: pointer;
-  font-family:  Arial, Helvetica, sans-serif, monospace;
+  font-family: Arial, Helvetica, sans-serif, monospace;
   font-size: 1rem;
-  transition:  0.2s ease, transform 0.2s ease;
+  transition: 0.2s ease, transform 0.2s ease;
 }
 
 .category-button:hover {
-text-decoration: underline;
+  text-decoration: underline;
   transform: translateY(-2px);
 }
 
 .category-button:focus {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
-/* Galerie */
+/* ----------------------------------
+   Galerie
+---------------------------------- */
 .gallery {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* Genau 3 Spalten */
-  gap: 20px; /* Abstand zwischen den Galerie-Elementen */
-  justify-content: center; /* Optional: Zentriert die Galerie */
-  align-items: start; /* Richtet Elemente oben aus */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  justify-content: center;
+  align-items: start;
 }
 
-/* Galerie-Elemente */
 .gallery-item {
   position: relative;
-  display: block; /* Box passt sich dem Inhalt an */
-}
-
-/* Bilder */
-.gallery-item img {
-  width: 100%; /* Füllt die Breite der Zelle */
-  height: auto; /* Beibehaltung des Seitenverhältnisses */
   display: block;
-  object-fit: contain; /* Bild wird vollständig angezeigt */
 }
 
+.gallery-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
 
 .gallery-item:hover img {
-  transform: scale(1.05); /* Leichte Vergrößerung beim Hover */
+  transform: scale(1.05);
 }
 
 /* Hover-Info */
@@ -356,7 +484,9 @@ text-decoration: underline;
   opacity: 1;
 }
 
-/* Popup */
+/* ----------------------------------
+   Popup
+---------------------------------- */
 .popup {
   position: fixed;
   top: 0;
@@ -379,12 +509,16 @@ text-decoration: underline;
   gap: 20px;
   padding: 20px;
   position: relative;
+  box-sizing: border-box;
 }
 
 .popup-image {
-  width: 50%;
-  border-radius: 10px;
-  margin-top: 50px;
+  width: auto;       /* Keine Breitenlimitierung */
+  max-width: 40vw;  /* Schutz gegen Bildschirmüberlauf */
+  height: auto;
+  max-height: 80vh;  /* Erlaubt vertikale Ausdehnung bis 80% der Viewport-Höhe */
+  object-fit: contain;
+
 }
 
 .popup-details {
@@ -395,49 +529,44 @@ text-decoration: underline;
 }
 
 .close-button {
-    position: absolute;
-    background-color: #fff;
-    top: -20px; /* Minimal über dem Bild positioniert */
-    right: 10px;
-    font-size: 1.5rem;
-    border: none; /* Optional: Rahmen für bessere Sichtbarkeit */
-  }
+  /* Button fixieren */
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  /* Graues Kästchen entfernen: */
+  background: none;
+  border: none;
+  outline: none;
+  color: black;
+  cursor: pointer;
+  font-size: 1.5rem;
+  z-index: 9999;
+}
 
-.close-button:hover {
+.close-button:hover,
+.close-button:focus {
   color: red;
+  outline: none;
 }
-
-/* Hauptlayout */
-html, body {
-  margin: 0;
-  padding: 0;
-  font-family: Arial, sans-serif;
-  height: 100%;
-  overflow-y: auto;
-}
-
-/* Mobile Media Query */
 @media (max-width: 768px) {
-  /* Kategorienleiste */
   .categories {
-    position: static; /* Kein Sticky auf mobilen Geräten */
-    width: 100%; /* Volle Breite */
+    position: static;
+    width: 100%;
     padding: 10px;
     display: flex;
-    flex-wrap: wrap; /* Kategorien umbrechen */
+    flex-wrap: wrap;
     gap: 10px;
   }
 
   .category-button {
-    width: calc(50% - 10px); /* Zwei Buttons pro Reihe */
+    width: calc(50% - 10px);
     text-align: center;
     padding: 10px;
-    font-size: 1rem;
+    font-size: 0.9rem; /* Schrift etwas kleiner */
   }
 
-  /* Galerie */
   .gallery {
-    grid-template-columns: 1fr; /* Nur eine Spalte */
+    grid-template-columns: 1fr;
     gap: 10px;
   }
 
@@ -445,17 +574,14 @@ html, body {
     width: 100%;
   }
 
-/* Mobile Media Query */
-@media (max-width: 768px) {
-    /* Popup */
-    .popup {
+  .popup {
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 0;
     overflow: hidden; /* Kein Scrollen im Popup */
-    width: 100vw; /* Vollbildbreite */
-    height: 100vh; /* Vollbildhöhe */
+    width: 100vw;
+    height: 100vh;
   }
 
   .popup-content {
@@ -466,72 +592,61 @@ html, body {
     background: white;
     padding: 10px;
     position: relative;
-    box-sizing: border-box; /* Padding wird in die Größe einberechnet */
+    box-sizing: border-box;
+    border-radius: 0;
   }
 
+  /* Bild soll größer sein: 60% Höhe statt 50% */
   .popup-image {
     width: 100%;
-    max-height: 50%; /* Bild nimmt maximal die obere Hälfte ein */
-    object-fit: contain; /* Bild wird vollständig angezeigt */
-    margin-bottom: 10px;
+    max-height: 60%; 
+    object-fit: contain;
+    margin-bottom: 5px; /* Weniger Abstand nach unten */
   }
 
+  /* Schrift verkleinern, Abstände reduzieren */
   .popup-details {
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: space-around; /* Fakten gleichmäßig verteilen */
+    justify-content: flex-start;
     align-items: center;
-    padding: 10px;
-    box-sizing: border-box; /* Padding wird in die Größe einberechnet */
+    gap: 4px; /* engerer Zeilenabstand */
+    padding: 5px;
+    box-sizing: border-box;
     text-align: center;
+    font-size: 0.9rem; /* Schrift insgesamt kleiner */
   }
 
   .close-button {
     position: absolute;
     top: 10px;
     right: 10px;
-    font-size: 1.5rem;
+    font-size: 1.3rem; /* Button minimal kleiner */
     background: none;
     border: none;
     padding: 5px;
     z-index: 10;
   }
 
- /* Navigationsbuttons */
- nav {
-    margin-top: auto; /* Buttons ganz unten */
-    display: flex;
-    justify-content: center;
-    gap: 10px; /* Abstand zwischen den Buttons */
-  }
-
   .prev-button,
   .next-button {
-    font-size: 1rem;
-    padding: 10px 20px;
+    font-size: 0.9rem; /* Ebenfalls kleiner */
+    padding: 8px 16px;
     background: white;
     border-radius: 5px;
     border: 1px solid #ccc;
     cursor: pointer;
   }
 
-  /* Zurück und Weiter nebeneinander */
   .prev-button {
     order: 1;
+    transform: translate3d(30px, 70px, 0px);
   }
 
   .next-button {
     order: 2;
-  }
-  /* Zurück und Weiter nebeneinander, leicht ins Bild gerückt */
-  .prev-button {
-    transform: translate3d(40px,70px,0px); /* Rückt den Zurück-Button etwas ins Bild */
-  }
-
-  .next-button {
-    transform: translate3d(-40px,70px,0px);
-
+    transform: translate3d(-30px, 70px, 0px);
   }
 
   .popup-content nav {
@@ -540,22 +655,20 @@ html, body {
     gap: 10px;
     margin-top: 10px;
   }
-}
 
-.category-dropdown {
-  appearance: none; /* Entfernt allgemeine Standard-Styles */
-  background-color: white; /* Weißer Hintergrund */
-  border-radius: 5px; /* Abgerundete Ecken */
-  padding: 10px; /* Innenabstand */
-  font-family: Arial, Helvetica, sans-serif, monospace; /* Konsistente Schrift */
-  font-size: 1rem; /* Schriftgröße */
-  font-weight: bold; /* Fettschrift */
-  color: black; /* Schwarzer Text */
-  cursor: pointer; /* Hand-Cursor */
-  width: 100%; /* Volle Breite für Mobilgeräte */
-  text-decoration: underline;
-  box-sizing: border-box; /* Padding wird in die Breite einbezogen */
+  .category-dropdown {
+    appearance: none;
+    background-color: white;
+    border-radius: 5px;
+    padding: 8px;
+    font-family: Arial, Helvetica, sans-serif, monospace;
+    font-size: 0.9rem; 
+    font-weight: bold;
+    color: black;
+    cursor: pointer;
+    width: 100%;
+    text-decoration: underline;
+    box-sizing: border-box;
+  }
 }
-}
-
 </style>
