@@ -36,7 +36,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./build/dist/index.html  # Pfad zu deiner build/index.html
-          server-dir: /  
+          server-dir: /www/  
           exclude: |
             **/*  
 
@@ -48,7 +48,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./build/dist/assets  # Pfad zu deinen build/dist/assets
-          server-dir: /assets  # Zielverzeichnis auf dem Server
+          server-dir: /www/assets  # Zielverzeichnis auf dem Server
           exclude: |
             **/* 
 
@@ -60,7 +60,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./build/dist/gallery.php 
-          server-dir: /public/ 
+          server-dir: /www/public/ 
           exclude: |
             **/* 
           include: |
